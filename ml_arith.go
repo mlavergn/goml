@@ -57,28 +57,28 @@ func Add(dataA Data, dataB Data) (sum Data) {
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
-		LogDebug("MM")
+		LogDebug("AddMM")
 		sum = AddMM(dataA.(Matrix), dataB.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
-		LogDebug("VV")
+		LogDebug("AddVV")
 		sum = AddVV(dataA.(Vector), dataB.(Vector))
 	case ARG1_MATRIX | ARG2_VECTOR:
-		LogDebug("MV")
+		LogDebug("AddMV")
 		sum = AddMV(dataA.(Matrix), dataB.(Vector))
 	case ARG1_VECTOR | ARG2_MATRIX:
-		LogDebug("VM")
+		LogDebug("AddVM")
 		sum = AddMV(dataB.(Matrix), dataA.(Vector))
 	case ARG1_MATRIX | ARG2_SCALAR:
-		LogDebug("MS")
+		LogDebug("AddMS")
 		sum = AddMS(dataA.(Matrix), dataB.(float64))
 	case ARG1_SCALAR | ARG2_MATRIX:
-		LogDebug("SM")
+		LogDebug("AddSM")
 		sum = AddMS(dataB.(Matrix), dataA.(float64))
 	case ARG1_VECTOR | ARG2_SCALAR:
-		LogDebug("VS")
+		LogDebug("AddVS")
 		sum = AddVS(dataA.(Vector), dataB.(float64))
 	case ARG1_SCALAR | ARG2_VECTOR:
-		LogDebug("SV")
+		LogDebug("AddSV")
 		sum = AddVS(dataB.(Vector), dataA.(float64))
 	default:
 		LogWarnf("unhandled flag set")
@@ -95,7 +95,7 @@ func AddMM(matrix Matrix, matrix2 Matrix) (sum Matrix) {
 	rows2, cols2 := Size(matrix2)
 
 	if rows != rows2 || cols != cols2 {
-		LogErrorf("nonconformant arguments %dx%d + %dx%d\n", rows, cols, rows2, cols2)
+		LogErrorf("error: operator +: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 		return sum
 	}
 
@@ -139,8 +139,8 @@ func AddMV(matrix Matrix, vector Vector) (sum Matrix) {
 	rows, cols := Size(matrix)
 	rows2, cols2 := Size(vector)
 
-	if cols != 1 {
-		LogErrorf("nonconformant arguments %dx%d + %dx%d\n", rows, cols, rows2, cols2)
+	if cols != cols2 {
+		LogErrorf("error: operator +: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 		return sum
 	}
 
@@ -194,36 +194,35 @@ func Sub(dataA Data, dataB Data) (diff Data) {
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
-		LogDebug("MM")
-		diff = AddMM(dataA.(Matrix), dataB.(Matrix))
+		LogDebug("SubMM")
+		diff = SubMM(dataA.(Matrix), dataB.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
-		LogDebug("VV")
-		diff = AddVV(dataA.(Vector), dataB.(Vector))
+		LogDebug("SubVV")
+		diff = SubVV(dataA.(Vector), dataB.(Vector))
 	case ARG1_MATRIX | ARG2_VECTOR:
-		LogDebug("MV")
-		diff = AddMV(dataA.(Matrix), dataB.(Vector))
+		LogDebug("SubMV")
+		diff = SubMV(dataA.(Matrix), dataB.(Vector))
 	case ARG1_VECTOR | ARG2_MATRIX:
-		LogDebug("VM")
-		diff = AddMV(dataB.(Matrix), dataA.(Vector))
+		LogDebug("SubVM")
+		diff = SubVM(dataA.(Vector), dataB.(Matrix))
 	case ARG1_MATRIX | ARG2_SCALAR:
-		LogDebug("MS")
-		diff = AddMS(dataA.(Matrix), dataB.(float64))
+		LogDebug("SubMS")
+		diff = SubMS(dataA.(Matrix), dataB.(float64))
 	case ARG1_SCALAR | ARG2_MATRIX:
-		LogDebug("SM")
-		diff = AddMS(dataB.(Matrix), dataA.(float64))
+		LogDebug("SubSM")
+		diff = SubSM(dataA.(float64), dataB.(Matrix))
 	case ARG1_VECTOR | ARG2_SCALAR:
-		LogDebug("VS")
-		diff = AddVS(dataA.(Vector), dataB.(float64))
+		LogDebug("SubVS")
+		diff = SubVS(dataA.(Vector), dataB.(float64))
 	case ARG1_SCALAR | ARG2_VECTOR:
-		LogDebug("SV")
-		diff = AddVS(dataB.(Vector), dataA.(float64))
+		LogDebug("SubSV")
+		diff = SubSV(dataA.(float64), dataB.(Vector))
 	default:
 		LogWarnf("unhandled flag set")
 	}
 
 	return diff
 }
-
 
 //
 // Creates a matrix of the differences of two matricies.
@@ -253,6 +252,158 @@ func SubVV(vectorA Vector, vectorB Vector) (diff Vector) {
 	}
 
 	return diff
+}
+
+//
+// Creates a vector of the differences of two vectors.
+//
+func SubMV(matrix Matrix, vector Vector) (diff Matrix) {
+	rows, cols := Size(matrix)
+	rows2, cols2 := Size(vector)
+
+	if cols != cols2 {
+		LogErrorf("error: operator -: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+		return diff
+	}
+
+	diff = NewMatrix(rows, cols)
+
+	for i, row := range matrix {
+		for j, val := range row {
+			diff[i][j] = val - vector[j]
+		}
+	}
+
+	return diff
+}
+
+//
+// Creates a vector of the differences of two vectors.
+//
+func SubVM(vector Vector, matrix Matrix) (diff Matrix) {
+	rows, cols := Size(vector)
+	rows2, cols2 := Size(matrix)
+
+	if cols != cols2 {
+		LogErrorf("error: operator -: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+		return diff
+	}
+
+	diff = NewMatrix(rows2, cols2)
+
+	for i, row := range matrix {
+		for j, val := range row {
+			diff[i][j] = vector[j] - val
+		}
+	}
+
+	return diff
+}
+
+//
+// Creates a matrix of the difference of a matrix and a scalar.
+//
+func SubMS(matrix Matrix, scalar float64) (diff Matrix) {
+	rows, cols := Size(matrix)
+
+	diff = NewMatrix(rows, cols)
+
+	for i, row := range matrix {
+		for j, val := range row {
+			diff[i][j] = val - scalar
+		}
+	}
+
+	return diff
+}
+
+//
+// Creates a matrix of the difference of a scalar and a matrix.
+//
+func SubSM(scalar float64, matrix Matrix) (diff Matrix) {
+	rows, cols := Size(matrix)
+
+	diff = NewMatrix(rows, cols)
+
+	for i, row := range matrix {
+		for j, val := range row {
+			diff[i][j] = scalar - val
+		}
+	}
+
+	return diff
+}
+
+//
+// Creates a matrix of the difference of a matrix and a scalar.
+//
+func SubVS(vector Vector, scalar float64) (diff Vector) {
+	_, cols := Size(vector)
+
+	diff = NewVector(cols)
+
+	for i, val := range vector {
+		diff[i] = val - scalar
+	}
+
+	return diff
+}
+
+//
+// Creates a matrix of the difference of a scalar and a matrix.
+//
+func SubSV(scalar float64, vector Vector) (diff Vector) {
+	_, cols := Size(vector)
+
+	diff = NewVector(cols)
+
+	for i, val := range vector {
+		diff[i] = val - scalar
+	}
+
+	return diff
+}
+
+//
+// Generic Mul-tiplication method
+//
+func Mul(dataA Data, dataB Data) (prod Data) {
+	flags := _argBitmask(dataA, dataB)
+
+	switch flags {
+	case ARG1_MATRIX | ARG2_MATRIX:
+		LogDebug("MulMM")
+		prod = MulMM(dataA.(Matrix), dataB.(Matrix))
+	case ARG1_VECTOR | ARG2_VECTOR:
+		LogDebug("MulVV")
+		rows, cols := Size(dataA)
+		rows2, cols2 := Size(dataB)
+		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+	case ARG1_MATRIX | ARG2_VECTOR:
+		LogDebug("MulMV")
+		rows, cols := Size(dataA)
+		rows2, cols2 := Size(dataB)
+		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+	case ARG1_VECTOR | ARG2_MATRIX:
+		LogDebug("MulVM")
+		prod = MulVM(dataA.(Vector), dataB.(Matrix))
+	case ARG1_MATRIX | ARG2_SCALAR:
+		LogDebug("MulMS")
+		prod = MulSM(dataA.(float64), dataB.(Matrix))
+	case ARG1_SCALAR | ARG2_MATRIX:
+		LogDebug("MulSM")
+		prod = MulSM(dataA.(float64), dataB.(Matrix))
+	case ARG1_VECTOR | ARG2_SCALAR:
+		LogDebug("MulVS")
+		prod = MulVS(dataA.(Vector), dataB.(float64))
+	case ARG1_SCALAR | ARG2_VECTOR:
+		LogDebug("vSV")
+		prod = MulSV(dataA.(float64), dataB.(Vector))
+	default:
+		LogWarnf("unhandled flag set")
+	}
+
+	return prod
 }
 
 //
@@ -322,6 +473,88 @@ func MulSM(factor float64, matrix Matrix) (prod Matrix) {
 	}
 
 	return prod
+}
+
+//
+// Generic Div-ision method
+//
+func Div(dataA Data, dataB Data) (prod Data) {
+	flags := _argBitmask(dataA, dataB)
+
+	switch flags {
+	case ARG1_MATRIX | ARG2_MATRIX:
+		LogDebug("DivMM")
+		prod = DivMM(dataA.(Matrix), dataB.(Matrix))
+	case ARG1_VECTOR | ARG2_VECTOR:
+		LogDebug("DivVV")
+		rows, cols := Size(dataA)
+		rows2, cols2 := Size(dataB)
+		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+	case ARG1_MATRIX | ARG2_VECTOR:
+		LogDebug("DivMV")
+		rows, cols := Size(dataA)
+		rows2, cols2 := Size(dataB)
+		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+	case ARG1_VECTOR | ARG2_MATRIX:
+		LogDebug("DivVM")
+		prod = DivVM(dataA.(Vector), dataB.(Matrix))
+	case ARG1_MATRIX | ARG2_SCALAR:
+		LogDebug("DivMS")
+		prod = DivMS(dataA.(Matrix), dataB.(float64))
+	case ARG1_SCALAR | ARG2_MATRIX:
+		LogDebug("DivSM")
+		rows, cols := Size(dataA)
+		rows2, cols2 := Size(dataB)
+		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+	case ARG1_VECTOR | ARG2_SCALAR:
+		LogDebug("DivVS")
+		prod = DivVS(dataA.(Vector), dataB.(float64))
+	case ARG1_SCALAR | ARG2_VECTOR:
+		LogDebug("DivSV")
+		rows, cols := Size(dataA)
+		rows2, cols2 := Size(dataB)
+		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+	default:
+		LogWarnf("unhandled flag set")
+	}
+
+	return prod
+}
+
+//
+// Creates a matrix of the quotients of a matrix and a value.
+//
+func DivMM(matrix Matrix, matrixB Matrix) (quot Matrix) {
+	rows, cols := Size(matrix)
+	quot = NewMatrix(rows, cols)
+
+	// TBD
+
+	return quot
+}
+
+//
+// Creates a matrix of the quotients of a matrix and a value.
+//
+func DivMV(matrix Matrix, vector Vector) (quot Matrix) {
+	rows, cols := Size(matrix)
+	quot = NewMatrix(rows, cols)
+
+	// TBD
+
+	return quot
+}
+
+//
+// Creates a matrix of the quotients of a matrix and a value.
+//
+func DivVM(vector Vector, matrix Matrix) (quot Matrix) {
+	rows, cols := Size(matrix)
+	quot = NewMatrix(rows, cols)
+
+	// TBD
+
+	return quot
 }
 
 //
