@@ -5,7 +5,8 @@
 package goml
 
 import (
-	"log"
+	. "golog"
+	"reflect"
 )
 
 type ArgBitmask uint16
@@ -28,8 +29,10 @@ func _argBitmask(arg1 Data, arg2 Data) (flags ArgBitmask) {
 		flags |= ARG1_MATRIX
 	case Vector, []float64:
 		flags |= ARG1_VECTOR
-	default:
+	case float64, float32, int:
 		flags |= ARG1_SCALAR
+  default:
+    LogWarnf("unhandled: %s", reflect.TypeOf(arg1))
 	}
 
 	switch arg2.(type) {
@@ -37,8 +40,10 @@ func _argBitmask(arg1 Data, arg2 Data) (flags ArgBitmask) {
 		flags |= ARG2_MATRIX
 	case Vector, []float64:
 		flags |= ARG2_VECTOR
-	default:
+	case float64, float32, int:
 		flags |= ARG2_SCALAR
+  default:
+    LogWarnf("unhandled: %s", reflect.TypeOf(arg2))
 	}
 
 	return flags
@@ -52,14 +57,54 @@ func Add(dataA Data, dataB Data) (sum Data) {
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
-		log.Println("MM")
+		LogDebug("MM")
+		sum = AddMM(dataA.(Matrix), dataB.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
-		log.Println("VV")
-		sum = AddVV(dataA.(Vector), dataB.([]float64))
+		LogDebug("VV")
+		sum = AddVV(dataA.(Vector), dataB.(Vector))
+	case ARG1_MATRIX | ARG2_VECTOR:
+		LogDebug("MV")
+		sum = AddMV(dataA.(Matrix), dataB.(Vector))
+	case ARG1_VECTOR | ARG2_MATRIX:
+		LogDebug("VM")
+		sum = AddMV(dataB.(Matrix), dataA.(Vector))
+	case ARG1_MATRIX | ARG2_SCALAR:
+		LogDebug("MS")
+		sum = AddMS(dataA.(Matrix), dataB.(float64))
+	case ARG1_SCALAR | ARG2_MATRIX:
+		LogDebug("SM")
+		sum = AddMS(dataB.(Matrix), dataA.(float64))
 	case ARG1_VECTOR | ARG2_SCALAR:
-		log.Println("VX")
+		LogDebug("VS")
+		sum = AddVS(dataA.(Vector), dataB.(float64))
+	case ARG1_SCALAR | ARG2_VECTOR:
+		LogDebug("SV")
+		sum = AddVS(dataB.(Vector), dataA.(float64))
 	default:
-		log.Println("other")
+		LogWarnf("unhandled flag set")
+	}
+
+	return sum
+}
+
+//
+// Creates a matrix of the sums of two matricies.
+//
+func AddMM(matrix Matrix, matrix2 Matrix) (sum Matrix) {
+	rows, cols := Size(matrix)
+	rows2, cols2 := Size(matrix2)
+
+	if rows != rows2 || cols != cols2 {
+		LogErrorf("nonconformant arguments %dx%d + %dx%d\n", rows, cols, rows2, cols2)
+		return sum
+	}
+
+	sum = NewMatrix(rows, cols)
+
+	for i, row := range matrix {
+		for j, val := range row {
+			sum[i][j] += val + matrix2[i][j]
+		}
 	}
 
 	return sum
@@ -69,13 +114,131 @@ func Add(dataA Data, dataB Data) (sum Data) {
 // Creates a vector of the sums of two vectors.
 //
 func AddVV(vectorA Vector, vectorB Vector) (sum Vector) {
-	sum = NewVector(len(vectorA))
+	cols := len(vectorA)
+	colsB := len(vectorB)
+
+	if cols != colsB {
+		LogError("undefined")
+		return sum
+	}
+
+	sum = NewVector(cols)
 
 	for i, val := range vectorA {
-		sum[i] = val + vectorB[i]
+		sum[i] += val + vectorB[i]
 	}
 
 	return sum
+}
+
+//
+// Creates a vector of the sum of a matrix and a vector
+// NOTE: arg order is irrelevant
+//
+func AddMV(matrix Matrix, vector Vector) (sum Matrix) {
+	rows, cols := Size(matrix)
+	rows2, cols2 := Size(vector)
+
+	if cols != 1 {
+		LogErrorf("nonconformant arguments %dx%d + %dx%d\n", rows, cols, rows2, cols2)
+		return sum
+	}
+
+	sum = NewMatrix(rows, cols2)
+
+	for i, row := range matrix {
+		for j, val := range vector {
+			sum[i][j] += row[0] + val
+		}
+	}
+
+	return sum
+}
+
+//
+// Creates a matrix of the sum of a matrix and a scalar
+// NOTE: arg order is irrelevant
+//
+func AddMS(matrix Matrix, scalar float64) (sum Matrix) {
+	rows, cols := Size(matrix)
+	sum = NewMatrix(rows, cols)
+
+	for i, row := range matrix {
+		for j, val := range row {
+			sum[i][j] += val + scalar
+		}
+	}
+
+	return sum
+}
+
+//
+// Creates a vector of the sum of a vector and a scalar
+// NOTE: arg order is irrelevant
+//
+func AddVS(vector Vector, scalar float64) (sum Vector) {
+	sum = NewVector(len(vector))
+
+	for i, val := range vector {
+		sum[i] = val + scalar
+	}
+
+	return sum
+}
+
+//
+// Generic Sub-tract method
+//
+func Sub(dataA Data, dataB Data) (diff Data) {
+	flags := _argBitmask(dataA, dataB)
+
+	switch flags {
+	case ARG1_MATRIX | ARG2_MATRIX:
+		LogDebug("MM")
+		diff = AddMM(dataA.(Matrix), dataB.(Matrix))
+	case ARG1_VECTOR | ARG2_VECTOR:
+		LogDebug("VV")
+		diff = AddVV(dataA.(Vector), dataB.(Vector))
+	case ARG1_MATRIX | ARG2_VECTOR:
+		LogDebug("MV")
+		diff = AddMV(dataA.(Matrix), dataB.(Vector))
+	case ARG1_VECTOR | ARG2_MATRIX:
+		LogDebug("VM")
+		diff = AddMV(dataB.(Matrix), dataA.(Vector))
+	case ARG1_MATRIX | ARG2_SCALAR:
+		LogDebug("MS")
+		diff = AddMS(dataA.(Matrix), dataB.(float64))
+	case ARG1_SCALAR | ARG2_MATRIX:
+		LogDebug("SM")
+		diff = AddMS(dataB.(Matrix), dataA.(float64))
+	case ARG1_VECTOR | ARG2_SCALAR:
+		LogDebug("VS")
+		diff = AddVS(dataA.(Vector), dataB.(float64))
+	case ARG1_SCALAR | ARG2_VECTOR:
+		LogDebug("SV")
+		diff = AddVS(dataB.(Vector), dataA.(float64))
+	default:
+		LogWarnf("unhandled flag set")
+	}
+
+	return diff
+}
+
+
+//
+// Creates a matrix of the differences of two matricies.
+//
+func SubMM(matrixA Matrix, matrixB Matrix) (diff Matrix) {
+	rows, cols := Size(matrixA)
+	diff = NewMatrix(rows, cols)
+
+	for i, row := range matrixA {
+		for j, val := range row {
+			diff[i][j] += val - matrixB[i][j]
+		}
+	}
+
+	return diff
 }
 
 //
@@ -95,66 +258,21 @@ func SubVV(vectorA Vector, vectorB Vector) (diff Vector) {
 //
 // Creates a vector of the products of a vector and a value.
 //
-func MulXV(factor float64, vectorA Vector) (prod Vector) {
-	return MulVX(vectorA, factor)
+func MulSV(factor float64, vector Vector) (prod Vector) {
+	return MulVS(vector, factor)
 }
 
 //
 // Creates a vector of the products of a vector and a value.
 //
-func MulVX(vectorA Vector, factor float64) (prod Vector) {
-	prod = NewVector(len(vectorA))
+func MulVS(vector Vector, factor float64) (prod Vector) {
+	prod = NewVector(len(vector))
 
-	for i, val := range vectorA {
+	for i, val := range vector {
 		prod[i] = val * factor
 	}
 
 	return prod
-}
-
-//
-// Creates a vector of the quotients of a vector and a value.
-//
-func DivVX(vectorA Vector, divisor float64) (quot Vector) {
-	quot = NewVector(len(vectorA))
-
-	for i, val := range vectorA {
-		quot[i] = val / divisor
-	}
-
-	return quot
-}
-
-//
-// Creates a matrix of the sums of two matricies.
-//
-func AddMM(matrixA Matrix, matrixB Matrix) (sum Matrix) {
-	rows, cols := Size(matrixA)
-	sum = NewMatrix(rows, cols)
-
-	for i, row := range matrixA {
-		for j, val := range row {
-			sum[i][j] += val + matrixB[i][j]
-		}
-	}
-
-	return sum
-}
-
-//
-// Creates a matrix of the differences of two matricies.
-//
-func SubMM(matrixA Matrix, matrixB Matrix) (diff Matrix) {
-	rows, cols := Size(matrixA)
-	diff = NewMatrix(rows, cols)
-
-	for i, row := range matrixA {
-		for j, val := range row {
-			diff[i][j] += val - matrixB[i][j]
-		}
-	}
-
-	return diff
 }
 
 //
@@ -193,7 +311,7 @@ func MulVM(vector Vector, matrix Matrix) (prod Vector) {
 //
 // Creates a matrix of the products of a value and matrix.
 //
-func MulXM(factor float64, matrix Matrix) (prod Matrix) {
+func MulSM(factor float64, matrix Matrix) (prod Matrix) {
 	rows, cols := Size(matrix)
 	prod = NewMatrix(rows, cols)
 
@@ -209,14 +327,27 @@ func MulXM(factor float64, matrix Matrix) (prod Matrix) {
 //
 // Creates a matrix of the quotients of a matrix and a value.
 //
-func DivMX(matrixA Matrix, divisor float64) (quot Matrix) {
-	rows, cols := Size(matrixA)
+func DivMS(matrix Matrix, divisor float64) (quot Matrix) {
+	rows, cols := Size(matrix)
 	quot = NewMatrix(rows, cols)
 
-	for i, row := range matrixA {
+	for i, row := range matrix {
 		for j, val := range row {
 			quot[i][j] += val / divisor
 		}
+	}
+
+	return quot
+}
+
+//
+// Creates a vector of the quotients of a vector and a value.
+//
+func DivVS(vector Vector, divisor float64) (quot Vector) {
+	quot = NewVector(len(vector))
+
+	for i, val := range vector {
+		quot[i] = val / divisor
 	}
 
 	return quot

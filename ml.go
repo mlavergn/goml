@@ -7,6 +7,8 @@ package goml
 import (
 	"math/rand"
 	"time"
+  . "golog"
+  "reflect"
 )
 
 type Matrix [][]float64
@@ -34,7 +36,7 @@ func NewVector(rows int) (vector Vector) {
 }
 
 //
-// Creates an empty 2D matrix with no rows initialized.
+// Creates an empty matrix with no rows initialized.
 //
 func NewEmptyMatrix(rows int) (matrix Matrix) {
 	matrix = make(Matrix, rows)
@@ -43,7 +45,7 @@ func NewEmptyMatrix(rows int) (matrix Matrix) {
 }
 
 //
-// Creates a 2D matrix.
+// Creates a matrix.
 //
 func NewMatrix(rows int, cols int) (matrix Matrix) {
 	matrix = make(Matrix, rows)
@@ -55,7 +57,7 @@ func NewMatrix(rows int, cols int) (matrix Matrix) {
 }
 
 //
-// Size of the 2D matrix as rows, cols.
+// Size of the data structure as rows, cols.
 //
 func Size(data Data) (rows int, cols int) {
 	switch data.(type) {
@@ -68,8 +70,8 @@ func Size(data Data) (rows int, cols int) {
 	case float64:
 		rows = 1
 		cols = 1
-	default:
-		// undefined
+  default:
+    LogWarnf("unhandled: %s", reflect.TypeOf(data))
 	}
 
 	return rows, cols
@@ -78,14 +80,14 @@ func Size(data Data) (rows int, cols int) {
 //
 // Transpose a vector or matrix.
 //
-func Transpose(indata Data) (data Data) {
+func Transpose(inputData Data) (data Data) {
 	// invert the col and row vals
 	inputVector := false
 	outputVector := false
-	switch indata.(type) {
+	switch inputData.(type) {
 	case Matrix, [][]float64:
 		// we invert the returns here
-		cols, rows := Size(indata)
+		cols, rows := Size(inputData)
 		if rows > 1 {
 			data = NewMatrix(rows, cols)
 		} else {
@@ -96,12 +98,14 @@ func Transpose(indata Data) (data Data) {
 	case Vector, []float64:
 		inputVector = true
 		// we invert the returns here
-		cols, rows := Size(indata)
+		cols, rows := Size(inputData)
 		data = NewMatrix(rows, cols)
+  default:
+    LogWarnf("unhandled: %s", reflect.TypeOf(inputData))
 	}
 
 	if !inputVector {
-		for j, row := range indata.(Matrix) {
+		for j, row := range inputData.(Matrix) {
 			if !outputVector {
 				for i, colval := range row {
 					data.(Matrix)[i][j] = colval
@@ -111,7 +115,7 @@ func Transpose(indata Data) (data Data) {
 			}
 		}
 	} else {
-		for i, val := range indata.(Vector) {
+		for i, val := range inputData.(Vector) {
 			data.(Matrix)[i][0] = val
 		}
 	}
@@ -122,7 +126,7 @@ func Transpose(indata Data) (data Data) {
 //
 // Shorthand for Transpose
 //
-type _transpose func(indata Data) (data Data)
+type _transpose func(Data) (Data)
 
 var T _transpose = Transpose
 
@@ -140,33 +144,42 @@ func Eye(size int) (matrix Matrix) {
 }
 
 //
-// Creates a 2D matrix filled with 0's.
+// Creates a data structure filled with 0's.
 //
-func Zeros(rows int, cols int) (matrix Matrix) {
-	matrix = NewMatrix(rows, cols)
-	// the default is zero, so there's nothing to do but return
+func Zeros(rows int, cols int) (data Data) {
+  if rows > 1 {
+	 data = NewMatrix(rows, cols)
+  } else {
+   data = NewVector(cols)
+  }
 
-	return matrix
+	return data
 }
 
 //
-// Creates a 2D matrix filled with 1's.
+// Creates a data structure filled with 1's.
 //
-func Ones(rows int, cols int) (matrix Matrix) {
-	matrix = NewMatrix(rows, cols)
+func Ones(rows int, cols int) (data Data) {
+  if rows > 1 {
+   data = NewMatrix(rows, cols)
+    for _, row := range data.(Matrix) {
+      for i, _ := range row {
+        row[i] = 1
+      }
+    }
+  } else {
+    data = NewVector(cols)
+    for i, _ := range data.(Vector) {
+      data.(Vector)[i] = 1
+    }
+  }
 
-	// looks awkward, but it's the most performant way
-	for _, row := range matrix {
-		for i := range row {
-			row[i] = 1
-		}
-	}
 
-	return matrix
+	return data
 }
 
 //
-// Creates a 2D matrix filled with a sequence.
+// Creates a data structure filled with a sequence.
 //
 func Seq(rows int, cols int) (matrix Matrix) {
 	matrix = NewMatrix(rows, cols)
@@ -204,7 +217,7 @@ func Cols(inmatrix Matrix, colFrom int, colTo int) (matrix Matrix) {
 }
 
 //
-// Creates a 2D matrix filled with 1's.
+// Creates a matrix filled with 1's.
 //
 func Rand(rows int, cols int) (matrix Matrix) {
 	matrix = NewMatrix(rows, cols)
@@ -222,7 +235,7 @@ func Rand(rows int, cols int) (matrix Matrix) {
 }
 
 //
-// Unrolls a 2D matrix into a vector.
+// Unrolls a matrix into a vector.
 //
 func Unroll(matrix Matrix) (vector Vector) {
 	rows, cols := Size(matrix)
@@ -238,7 +251,7 @@ func Unroll(matrix Matrix) (vector Vector) {
 }
 
 //
-// Reshape a 2D vector into a matrix.
+// Reshape a vector into a matrix.
 //
 func Reshape(vector Vector, rows int, cols int) (matrix Matrix) {
 	matrix = NewMatrix(rows, cols)
@@ -250,6 +263,27 @@ func Reshape(vector Vector, rows int, cols int) (matrix Matrix) {
 	}
 
 	return matrix
+}
+
+func Join(datas ...interface{}) (data Data) {
+  switch datas[0].(type) {
+  case Matrix, [][]float64:
+    matrix := NewEmptyMatrix(len(datas))
+    for i, row := range datas {
+      matrix[i] = row.([]float64)
+    }
+    return JoinM(matrix)
+  case Vector, []float64:
+    vector := NewVector(len(datas))
+    for i, val := range datas {
+      vector[i] = val.(float64)
+    }
+    return JoinV(vector)
+  default:
+    LogWarnf("unhandled: %s", reflect.TypeOf(datas))
+  }
+
+  return
 }
 
 //

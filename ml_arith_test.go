@@ -20,14 +20,14 @@ func TestSubVV(t *testing.T) {
 	_equalsVector(t, x, exp)
 }
 
-func TestMulVX(t *testing.T) {
-	x := MulVX(Vector{1, 2, 3}, 10.0)
+func TestMulVS(t *testing.T) {
+	x := MulVS(Vector{1, 2, 3}, 10.0)
 	exp := Vector{10, 20, 30}
 	_equalsVector(t, x, exp)
 }
 
-func TestDivVX(t *testing.T) {
-	x := DivVX(Vector{1, 2, 3}, 2.0)
+func TestDivVS(t *testing.T) {
+	x := DivVS(Vector{1, 2, 3}, 2.0)
 	exp := Vector{0.5, 1.0, 1.5}
 	_equalsVector(t, x, exp)
 }
@@ -56,14 +56,14 @@ func TestMulVM(t *testing.T) {
 	_equalsVector(t, x, exp)
 }
 
-func TestMulXM(t *testing.T) {
-	x := MulXM(2.0, Matrix{{1, 2}, {3, 4}, {5, 6}})
+func TestMulSM(t *testing.T) {
+	x := MulSM(2.0, Matrix{{1, 2}, {3, 4}, {5, 6}})
 	exp := Matrix{{2, 4}, {6, 8}, {10, 12}}
 	_equalsMatrix(t, x, exp)
 }
 
-func TestDivMX(t *testing.T) {
-	x := DivMX(Matrix{{1, 2}, {3, 4}, {5, 6}}, 2.0)
+func TestDivMS(t *testing.T) {
+	x := DivMS(Matrix{{1, 2}, {3, 4}, {5, 6}}, 2.0)
 	exp := Matrix{{0.5, 1.0}, {1.5, 2.0}, {2.5, 3.0}}
 	_equalsMatrix(t, x, exp)
 }

@@ -7,4 +7,4 @@ The API is loosley inspired from Octave but since there is no operator overleadi
 This project is currently unstable while the API is refined.
 --
 Dependencies:
-This package has no external dependencies.
+This package depends on golog.
