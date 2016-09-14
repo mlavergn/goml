@@ -8,7 +8,6 @@ import (
 	"testing"
 )
 
-
 func TestSigmoid(t *testing.T) {
 	x := Sigmoid(1.0).(float64)
 	exp := 1.581977

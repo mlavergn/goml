@@ -45,12 +45,12 @@ func GradientDescent(X Matrix, y, intheta Matrix, alpha float64, num_iters int) 
 	for i := 0; i < num_iters; i++ {
 		Jc := ComputeLRCost(X, y, theta)
 
-		tX := MulVM(T(theta).(Vector), T(X).(Matrix))
-		tXy := SubVV(tX, T(y).(Vector))
-		atXy := MulSV(alpha, tXy)
-		atXyX := MulVM(atXy, X)
-		atXyXm := DivVS(atXyX, float64(m))
-		theta = SubMM(theta, T(atXyXm).(Matrix))
+		tX := Mul(T(theta), T(X))
+		tXy := Sub(tX, T(y))
+		atXy := Mul(alpha, tXy)
+		atXyX := Mul(atXy, X)
+		atXyXm := Div(atXyX, float64(m))
+		theta = Sub(theta, T(atXyXm)).(Matrix)
 
 		Jn := ComputeLRCost(X, y, theta)
 

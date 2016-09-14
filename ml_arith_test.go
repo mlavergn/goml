@@ -9,61 +9,81 @@ import (
 )
 
 func TestAddVV(t *testing.T) {
-	x := AddVV(Vector{1, 2, 3}, Vector{10, 100, 1000})
+	x := Add(Vector{1, 2, 3}, Vector{10, 100, 1000})
 	exp := Vector{11, 102, 1003}
-	_equalsVector(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestSubVV(t *testing.T) {
-	x := SubVV(Vector{1, 2, 3}, Vector{10, 100, 1000})
+	x := Sub(Vector{1, 2, 3}, Vector{10, 100, 1000})
 	exp := Vector{-9, -98, -997}
-	_equalsVector(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestMulVS(t *testing.T) {
-	x := MulVS(Vector{1, 2, 3}, 10.0)
+	x := Mul(10.0, Vector{1, 2, 3})
 	exp := Vector{10, 20, 30}
-	_equalsVector(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestDivVS(t *testing.T) {
-	x := DivVS(Vector{1, 2, 3}, 2.0)
+	x := Div(Vector{1, 2, 3}, 2.0)
 	exp := Vector{0.5, 1.0, 1.5}
-	_equalsVector(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestAddMM(t *testing.T) {
-	x := AddMM(Matrix{{1, 2}, {3, 4}, {5, 6}}, Matrix{{6, 5}, {4, 3}, {2, 1}})
+	x := Add(Matrix{{1, 2}, {3, 4}, {5, 6}}, Matrix{{6, 5}, {4, 3}, {2, 1}})
 	exp := Matrix{{7, 7}, {7, 7}, {7, 7}}
-	_equalsMatrix(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestSubMM(t *testing.T) {
-	x := SubMM(Matrix{{1, 2}, {3, 4}, {5, 6}}, Matrix{{6, 5}, {4, 3}, {2, 1}})
+	x := Sub(Matrix{{1, 2}, {3, 4}, {5, 6}}, Matrix{{6, 5}, {4, 3}, {2, 1}})
 	exp := Matrix{{-5, -3}, {-1, 1}, {3, 5}}
-	_equalsMatrix(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestMulMM(t *testing.T) {
-	x := MulMM(Matrix{{1, 2}, {3, 4}, {5, 6}}, Matrix{{10}, {100}})
+	x := Mul(Matrix{{1, 2}, {3, 4}, {5, 6}}, Matrix{{10}, {100}})
 	exp := Matrix{{210}, {430}, {650}}
-	_equalsMatrix(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestMulVM(t *testing.T) {
-	x := MulVM(Vector{1, 2}, Matrix{{1, 2, 3}, {4, 5, 6}})
+	x := Mul(Vector{1, 2}, Matrix{{1, 2, 3}, {4, 5, 6}})
 	exp := Vector{9, 12, 15}
-	_equalsVector(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestMulSM(t *testing.T) {
-	x := MulSM(2.0, Matrix{{1, 2}, {3, 4}, {5, 6}})
+	x := Mul(2.0, Matrix{{1, 2}, {3, 4}, {5, 6}})
 	exp := Matrix{{2, 4}, {6, 8}, {10, 12}}
-	_equalsMatrix(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
 
 func TestDivMS(t *testing.T) {
-	x := DivMS(Matrix{{1, 2}, {3, 4}, {5, 6}}, 2.0)
+	x := Div(Matrix{{1, 2}, {3, 4}, {5, 6}}, 2.0)
 	exp := Matrix{{0.5, 1.0}, {1.5, 2.0}, {2.5, 3.0}}
-	_equalsMatrix(t, x, exp)
+	if !Equal(x, exp) {
+		t.Errorf("%v != %v", x, exp)
+	}
 }
