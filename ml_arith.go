@@ -6,6 +6,7 @@ package goml
 
 import (
 	. "golog"
+	"math"
 	"reflect"
 )
 
@@ -31,8 +32,8 @@ func _argBitmask(arg1 Data, arg2 Data) (flags ArgBitmask) {
 		flags |= ARG1_VECTOR
 	case float64, float32, int:
 		flags |= ARG1_SCALAR
-  default:
-    LogWarnf("unhandled: %s", reflect.TypeOf(arg1))
+	default:
+		LogErrorf("Unhandled argument type: %s", reflect.TypeOf(arg1))
 	}
 
 	switch arg2.(type) {
@@ -42,8 +43,8 @@ func _argBitmask(arg1 Data, arg2 Data) (flags ArgBitmask) {
 		flags |= ARG2_VECTOR
 	case float64, float32, int:
 		flags |= ARG2_SCALAR
-  default:
-    LogWarnf("unhandled: %s", reflect.TypeOf(arg2))
+	default:
+		LogErrorf("Unhandled argument type: %s", reflect.TypeOf(arg2))
 	}
 
 	return flags
@@ -52,36 +53,36 @@ func _argBitmask(arg1 Data, arg2 Data) (flags ArgBitmask) {
 //
 // Generic Add method
 //
-func Add(dataA Data, dataB Data) (sum Data) {
-	flags := _argBitmask(dataA, dataB)
+func Add(arg1 Data, arg2 Data) (sum Data) {
+	flags := _argBitmask(arg1, arg2)
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
 		LogDebug("AddMM")
-		sum = AddMM(dataA.(Matrix), dataB.(Matrix))
+		sum = AddMM(arg1.(Matrix), arg2.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
 		LogDebug("AddVV")
-		sum = AddVV(dataA.(Vector), dataB.(Vector))
+		sum = AddVV(arg1.(Vector), arg2.(Vector))
 	case ARG1_MATRIX | ARG2_VECTOR:
 		LogDebug("AddMV")
-		sum = AddMV(dataA.(Matrix), dataB.(Vector))
+		sum = AddMV(arg1.(Matrix), arg2.(Vector))
 	case ARG1_VECTOR | ARG2_MATRIX:
 		LogDebug("AddVM")
-		sum = AddMV(dataB.(Matrix), dataA.(Vector))
+		sum = AddMV(arg2.(Matrix), arg1.(Vector))
 	case ARG1_MATRIX | ARG2_SCALAR:
 		LogDebug("AddMS")
-		sum = AddMS(dataA.(Matrix), dataB.(float64))
+		sum = AddMS(arg1.(Matrix), arg2.(float64))
 	case ARG1_SCALAR | ARG2_MATRIX:
 		LogDebug("AddSM")
-		sum = AddMS(dataB.(Matrix), dataA.(float64))
+		sum = AddMS(arg2.(Matrix), arg1.(float64))
 	case ARG1_VECTOR | ARG2_SCALAR:
 		LogDebug("AddVS")
-		sum = AddVS(dataA.(Vector), dataB.(float64))
+		sum = AddVS(arg1.(Vector), arg2.(float64))
 	case ARG1_SCALAR | ARG2_VECTOR:
 		LogDebug("AddSV")
-		sum = AddVS(dataB.(Vector), dataA.(float64))
+		sum = AddVS(arg2.(Vector), arg1.(float64))
 	default:
-		LogWarnf("unhandled flag set")
+		LogError("Unhandled argument type / combination")
 	}
 
 	return sum
@@ -103,7 +104,7 @@ func AddMM(matrix Matrix, matrix2 Matrix) (sum Matrix) {
 
 	for i, row := range matrix {
 		for j, val := range row {
-			sum[i][j] += val + matrix2[i][j]
+			sum[i][j] = val + matrix2[i][j]
 		}
 	}
 
@@ -113,19 +114,19 @@ func AddMM(matrix Matrix, matrix2 Matrix) (sum Matrix) {
 //
 // Creates a vector of the sums of two vectors.
 //
-func AddVV(vectorA Vector, vectorB Vector) (sum Vector) {
-	cols := len(vectorA)
-	colsB := len(vectorB)
+func AddVV(vector Vector, vector2 Vector) (sum Vector) {
+	rows, cols := Size(vector)
+	rows2, cols2 := Size(vector2)
 
-	if cols != colsB {
-		LogError("undefined")
+	if cols != cols2 {
+		LogErrorf("error: operator +: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 		return sum
 	}
 
 	sum = NewVector(cols)
 
-	for i, val := range vectorA {
-		sum[i] += val + vectorB[i]
+	for i, val := range vector {
+		sum[i] = val + vector2[i]
 	}
 
 	return sum
@@ -147,8 +148,8 @@ func AddMV(matrix Matrix, vector Vector) (sum Matrix) {
 	sum = NewMatrix(rows, cols2)
 
 	for i, row := range matrix {
-		for j, val := range vector {
-			sum[i][j] += row[0] + val
+		for j, val := range row {
+			sum[i][j] = val + vector[j]
 		}
 	}
 
@@ -165,7 +166,7 @@ func AddMS(matrix Matrix, scalar float64) (sum Matrix) {
 
 	for i, row := range matrix {
 		for j, val := range row {
-			sum[i][j] += val + scalar
+			sum[i][j] = val + scalar
 		}
 	}
 
@@ -189,36 +190,36 @@ func AddVS(vector Vector, scalar float64) (sum Vector) {
 //
 // Generic Sub-tract method
 //
-func Sub(dataA Data, dataB Data) (diff Data) {
-	flags := _argBitmask(dataA, dataB)
+func Sub(arg1 Data, arg2 Data) (diff Data) {
+	flags := _argBitmask(arg1, arg2)
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
 		LogDebug("SubMM")
-		diff = SubMM(dataA.(Matrix), dataB.(Matrix))
+		diff = SubMM(arg1.(Matrix), arg2.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
 		LogDebug("SubVV")
-		diff = SubVV(dataA.(Vector), dataB.(Vector))
+		diff = SubVV(arg1.(Vector), arg2.(Vector))
 	case ARG1_MATRIX | ARG2_VECTOR:
 		LogDebug("SubMV")
-		diff = SubMV(dataA.(Matrix), dataB.(Vector))
+		diff = SubMV(arg1.(Matrix), arg2.(Vector))
 	case ARG1_VECTOR | ARG2_MATRIX:
 		LogDebug("SubVM")
-		diff = SubVM(dataA.(Vector), dataB.(Matrix))
+		diff = SubVM(arg1.(Vector), arg2.(Matrix))
 	case ARG1_MATRIX | ARG2_SCALAR:
 		LogDebug("SubMS")
-		diff = SubMS(dataA.(Matrix), dataB.(float64))
+		diff = SubMS(arg1.(Matrix), arg2.(float64))
 	case ARG1_SCALAR | ARG2_MATRIX:
 		LogDebug("SubSM")
-		diff = SubSM(dataA.(float64), dataB.(Matrix))
+		diff = SubSM(arg1.(float64), arg2.(Matrix))
 	case ARG1_VECTOR | ARG2_SCALAR:
 		LogDebug("SubVS")
-		diff = SubVS(dataA.(Vector), dataB.(float64))
+		diff = SubVS(arg1.(Vector), arg2.(float64))
 	case ARG1_SCALAR | ARG2_VECTOR:
 		LogDebug("SubSV")
-		diff = SubSV(dataA.(float64), dataB.(Vector))
+		diff = SubSV(arg1.(float64), arg2.(Vector))
 	default:
-		LogWarnf("unhandled flag set")
+		LogError("Unhandled argument type / combination")
 	}
 
 	return diff
@@ -227,13 +228,13 @@ func Sub(dataA Data, dataB Data) (diff Data) {
 //
 // Creates a matrix of the differences of two matricies.
 //
-func SubMM(matrixA Matrix, matrixB Matrix) (diff Matrix) {
-	rows, cols := Size(matrixA)
+func SubMM(matrix Matrix, matrix2 Matrix) (diff Matrix) {
+	rows, cols := Size(matrix)
 	diff = NewMatrix(rows, cols)
 
-	for i, row := range matrixA {
+	for i, row := range matrix {
 		for j, val := range row {
-			diff[i][j] += val - matrixB[i][j]
+			diff[i][j] = val - matrix2[i][j]
 		}
 	}
 
@@ -243,12 +244,12 @@ func SubMM(matrixA Matrix, matrixB Matrix) (diff Matrix) {
 //
 // Creates a vector of the differences of two vectors.
 //
-func SubVV(vectorA Vector, vectorB Vector) (diff Vector) {
-	_, cols := Size(vectorA)
+func SubVV(vector Vector, vector2 Vector) (diff Vector) {
+	_, cols := Size(vector)
 	diff = NewVector(cols)
 
-	for i, val := range vectorA {
-		diff[i] = val - vectorB[i]
+	for i, val := range vector {
+		diff[i] = val - vector2[i]
 	}
 
 	return diff
@@ -367,60 +368,38 @@ func SubSV(scalar float64, vector Vector) (diff Vector) {
 //
 // Generic Mul-tiplication method
 //
-func Mul(dataA Data, dataB Data) (prod Data) {
-	flags := _argBitmask(dataA, dataB)
+func Mul(arg1 Data, arg2 Data) (prod Data) {
+	flags := _argBitmask(arg1, arg2)
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
 		LogDebug("MulMM")
-		prod = MulMM(dataA.(Matrix), dataB.(Matrix))
+		prod = MulMM(arg1.(Matrix), arg2.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
 		LogDebug("MulVV")
-		rows, cols := Size(dataA)
-		rows2, cols2 := Size(dataB)
-		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+		prod = MulVV(arg1.(Vector), arg2.(Vector))
 	case ARG1_MATRIX | ARG2_VECTOR:
 		LogDebug("MulMV")
-		rows, cols := Size(dataA)
-		rows2, cols2 := Size(dataB)
+		rows, cols := Size(arg1)
+		rows2, cols2 := Size(arg2)
 		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 	case ARG1_VECTOR | ARG2_MATRIX:
 		LogDebug("MulVM")
-		prod = MulVM(dataA.(Vector), dataB.(Matrix))
+		prod = MulVM(arg1.(Vector), arg2.(Matrix))
 	case ARG1_MATRIX | ARG2_SCALAR:
 		LogDebug("MulMS")
-		prod = MulSM(dataA.(float64), dataB.(Matrix))
+		prod = MulSM(arg2.(float64), arg1.(Matrix))
 	case ARG1_SCALAR | ARG2_MATRIX:
 		LogDebug("MulSM")
-		prod = MulSM(dataA.(float64), dataB.(Matrix))
+		prod = MulSM(arg1.(float64), arg2.(Matrix))
 	case ARG1_VECTOR | ARG2_SCALAR:
 		LogDebug("MulVS")
-		prod = MulVS(dataA.(Vector), dataB.(float64))
+		prod = MulSV(arg2.(float64), arg1.(Vector))
 	case ARG1_SCALAR | ARG2_VECTOR:
-		LogDebug("vSV")
-		prod = MulSV(dataA.(float64), dataB.(Vector))
+		LogDebug("SV")
+		prod = MulSV(arg1.(float64), arg2.(Vector))
 	default:
-		LogWarnf("unhandled flag set")
-	}
-
-	return prod
-}
-
-//
-// Creates a vector of the products of a vector and a value.
-//
-func MulSV(factor float64, vector Vector) (prod Vector) {
-	return MulVS(vector, factor)
-}
-
-//
-// Creates a vector of the products of a vector and a value.
-//
-func MulVS(vector Vector, factor float64) (prod Vector) {
-	prod = NewVector(len(vector))
-
-	for i, val := range vector {
-		prod[i] = val * factor
+		LogError("Unhandled argument type / combination")
 	}
 
 	return prod
@@ -429,14 +408,43 @@ func MulVS(vector Vector, factor float64) (prod Vector) {
 //
 // Creates a matrix of the products of two matricies.
 //
-func MulMM(matrixA Matrix, matrixB Matrix) (prod Matrix) {
-	prod = NewMatrix(len(matrixA), 1)
+func MulMM(matrix Matrix, matrix2 Matrix) (prod Matrix) {
+	rows, cols := Size(matrix)
+	rows2, cols2 := Size(matrix2)
+
+	if cols != rows2 {
+		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+		return prod
+	}
+
+	prod = NewMatrix(len(matrix), 1)
 
 	// matrix * matrix multiplication => col[0] * row[0] + col[1] * row[1]
-	for i, row := range matrixA {
+	for i, row := range matrix {
 		for j, val := range row {
-			prod[i][0] += val * matrixB[j][0]
+			prod[i][0] += val * matrix2[j][0]
 		}
+	}
+
+	return prod
+}
+
+//
+// Creates a vector of the product of two vectors.
+//
+func MulVV(vector Vector, vector2 Vector) (prod Vector) {
+	rows, cols := Size(vector)
+	rows2, cols2 := Size(vector2)
+
+	if cols != cols2 {
+		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
+		return prod
+	}
+
+	prod = NewVector(cols)
+
+	for i, val := range vector {
+		prod[i] = val * vector2[i]
 	}
 
 	return prod
@@ -476,46 +484,59 @@ func MulSM(factor float64, matrix Matrix) (prod Matrix) {
 }
 
 //
+// Creates a vector of the products of a vector and a value.
+//
+func MulSV(factor float64, vector Vector) (prod Vector) {
+	prod = NewVector(len(vector))
+
+	for i, val := range vector {
+		prod[i] = val * factor
+	}
+
+	return prod
+}
+
+//
 // Generic Div-ision method
 //
-func Div(dataA Data, dataB Data) (prod Data) {
-	flags := _argBitmask(dataA, dataB)
+func Div(arg1 Data, arg2 Data) (prod Data) {
+	flags := _argBitmask(arg1, arg2)
 
 	switch flags {
 	case ARG1_MATRIX | ARG2_MATRIX:
 		LogDebug("DivMM")
-		prod = DivMM(dataA.(Matrix), dataB.(Matrix))
+		prod = DivMM(arg1.(Matrix), arg2.(Matrix))
 	case ARG1_VECTOR | ARG2_VECTOR:
 		LogDebug("DivVV")
-		rows, cols := Size(dataA)
-		rows2, cols2 := Size(dataB)
+		rows, cols := Size(arg1)
+		rows2, cols2 := Size(arg2)
 		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 	case ARG1_MATRIX | ARG2_VECTOR:
 		LogDebug("DivMV")
-		rows, cols := Size(dataA)
-		rows2, cols2 := Size(dataB)
+		rows, cols := Size(arg1)
+		rows2, cols2 := Size(arg2)
 		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 	case ARG1_VECTOR | ARG2_MATRIX:
 		LogDebug("DivVM")
-		prod = DivVM(dataA.(Vector), dataB.(Matrix))
+		prod = DivVM(arg1.(Vector), arg2.(Matrix))
 	case ARG1_MATRIX | ARG2_SCALAR:
 		LogDebug("DivMS")
-		prod = DivMS(dataA.(Matrix), dataB.(float64))
+		prod = DivMS(arg1.(Matrix), arg2.(float64))
 	case ARG1_SCALAR | ARG2_MATRIX:
 		LogDebug("DivSM")
-		rows, cols := Size(dataA)
-		rows2, cols2 := Size(dataB)
+		rows, cols := Size(arg1)
+		rows2, cols2 := Size(arg2)
 		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 	case ARG1_VECTOR | ARG2_SCALAR:
 		LogDebug("DivVS")
-		prod = DivVS(dataA.(Vector), dataB.(float64))
+		prod = DivVS(arg1.(Vector), arg2.(float64))
 	case ARG1_SCALAR | ARG2_VECTOR:
 		LogDebug("DivSV")
-		rows, cols := Size(dataA)
-		rows2, cols2 := Size(dataB)
+		rows, cols := Size(arg1)
+		rows2, cols2 := Size(arg2)
 		LogErrorf("error: operator /: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 	default:
-		LogWarnf("unhandled flag set")
+		LogError("Unhandled argument type / combination")
 	}
 
 	return prod
@@ -524,11 +545,15 @@ func Div(dataA Data, dataB Data) (prod Data) {
 //
 // Creates a matrix of the quotients of a matrix and a value.
 //
-func DivMM(matrix Matrix, matrixB Matrix) (quot Matrix) {
+func DivMM(matrix Matrix, matrix2 Matrix) (quot Matrix) {
 	rows, cols := Size(matrix)
 	quot = NewMatrix(rows, cols)
 
-	// TBD
+	for i, row := range matrix {
+		for j, val := range row {
+			quot[i][j] = val * math.Pow(matrix2[i][j], -1)
+		}
+	}
 
 	return quot
 }
@@ -552,7 +577,7 @@ func DivVM(vector Vector, matrix Matrix) (quot Matrix) {
 	rows, cols := Size(matrix)
 	quot = NewMatrix(rows, cols)
 
-	// TBD
+	// This is very complicated
 
 	return quot
 }
@@ -566,7 +591,7 @@ func DivMS(matrix Matrix, divisor float64) (quot Matrix) {
 
 	for i, row := range matrix {
 		for j, val := range row {
-			quot[i][j] += val / divisor
+			quot[i][j] = val / divisor
 		}
 	}
 
@@ -577,7 +602,8 @@ func DivMS(matrix Matrix, divisor float64) (quot Matrix) {
 // Creates a vector of the quotients of a vector and a value.
 //
 func DivVS(vector Vector, divisor float64) (quot Vector) {
-	quot = NewVector(len(vector))
+	_, cols := Size(vector)
+	quot = NewVector(cols)
 
 	for i, val := range vector {
 		quot[i] = val / divisor
