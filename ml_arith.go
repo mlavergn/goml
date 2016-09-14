@@ -387,17 +387,17 @@ func _dotMulMM(matrix Matrix, matrix2 Matrix) (prod Matrix) {
 	rows, cols := Size(matrix)
 	rows2, cols2 := Size(matrix2)
 
-	if cols != rows2 {
+	if rows != rows || cols != cols2 {
 		LogErrorf("error: operator *: nonconformant arguments (op1 is %dx%d, op2 is %dx%d)\n", rows, cols, rows2, cols2)
 		return prod
 	}
 
-	prod = NewMatrix(len(matrix), 1)
+	prod = NewMatrix(rows, cols)
 
 	// matrix * matrix multiplication => col[0] * row[0] + col[1] * row[1]
 	for i, row := range matrix {
 		for j, val := range row {
-			prod[i][0] += val * matrix2[j][0]
+			prod[i][j] = val * matrix2[i][j]
 		}
 	}
 

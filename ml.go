@@ -57,7 +57,9 @@ func Size(data Data) (rows int, cols int) {
 	switch data.(type) {
 	case Matrix, [][]float64:
 		rows = len(data.(Matrix))
-		cols = len(data.(Matrix)[0])
+		if rows > 0 {
+			cols = len(data.(Matrix)[0])
+		}
 	case Vector, []float64:
 		rows = 1
 		cols = len(data.(Vector))

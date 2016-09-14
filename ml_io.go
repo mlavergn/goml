@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/user"
 	"strconv"
 	"strings"
 )
@@ -18,22 +17,15 @@ import (
 // Assumptions: float64
 //
 func Load(filePath string) (matrix Matrix) {
-	// read the first line to introspect the column count
-	matrix = nil
-
-	usr, err := user.Current()
-	if err == nil {
-		path := usr.HomeDir + "/" + filePath
-
-		_, err = os.Stat(path)
-		if os.IsNotExist(err) {
-			return matrix
-		}
-
-		bytes, err := ioutil.ReadFile(path)
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		log.Fatal(err)
+	} else {
+		bytes, err := ioutil.ReadFile(filePath)
 		rawData := strings.TrimSpace(string(bytes))
 
 		if err == nil {
+			// read the first line to introspect the column count
 			lines := strings.Split(rawData, "\n")
 			rows := len(lines)
 			cols := 0
