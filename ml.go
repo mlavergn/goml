@@ -29,8 +29,8 @@ func NewEmptyVector() (vector Vector) {
 //
 // Creates a vector.
 //
-func NewVector(rows int) (vector Vector) {
-	vector = make(Vector, rows)
+func NewVector(cols int) (vector Vector) {
+	vector = make(Vector, cols)
 
 	return vector
 }
@@ -272,13 +272,13 @@ func Join(datas ...interface{}) (data Data) {
     for i, row := range datas {
       matrix[i] = row.([]float64)
     }
-    return JoinM(matrix)
+    return _joinM(matrix)
   case Vector, []float64:
     vector := NewVector(len(datas))
     for i, val := range datas {
       vector[i] = val.(float64)
     }
-    return JoinV(vector)
+    return _joinV(vector)
   default:
     LogWarnf("unhandled: %s", reflect.TypeOf(datas))
   }
@@ -289,7 +289,7 @@ func Join(datas ...interface{}) (data Data) {
 //
 // Join multiple arrays.
 //
-func JoinV(vectors ...Vector) (vector Vector) {
+func _joinV(vectors ...Vector) (vector Vector) {
 	vector = Vector{}
 
 	// keep it simple
@@ -303,7 +303,7 @@ func JoinV(vectors ...Vector) (vector Vector) {
 //
 // Join multiple arrays.
 //
-func JoinM(matrices ...Matrix) (matrix Matrix) {
+func _joinM(matrices ...Matrix) (matrix Matrix) {
 	matrix = nil
 	rows := 0
 	cols := 0
